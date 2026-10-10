@@ -1,0 +1,14 @@
+# macOS folder settings
+.DS_Store
+
+# Python virtual environment and cache
+.venv/
+__pycache__/
+*.pyc
+
+# Local credentials
+.env
+
+# Downloaded data and generated logs
+data/raw/
+logs/
