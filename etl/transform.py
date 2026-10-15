@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def transform_permits(df):
     '''Create a cleaned copy of the development permits DataFrame.'''
     clean_df = df.copy()
