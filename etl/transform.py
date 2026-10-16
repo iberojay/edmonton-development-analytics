@@ -37,6 +37,29 @@ def transform_permits(df):
         clean_df["neighbourhood_classification"].apply(clean_classifcation)
     )
 
+
+    '''Fill in missing neighbourhood names that have a neighbourhood ID'''
+    # Build a lookup from a single IDs with single, nonmissing names
+    known_names = clean_df.loc[
+        clean_df["neighbourhood_id"].notna()
+        & clean_df["neighbourhood"].notna()
+        & ~clean_df["neighbourhood_id"].str.contains(",", na=False)
+        & ~clean_df["neighbourhood"].str.contains(",", na=False),
+        ["neighbourhood_id", "neighbourhood"],
+    ].drop_duplicates()
+
+    # Prevent ambigious ID-to-name mappings
+    if known_names["neighbourhood_id"].duplicated().any():
+        raise ValueError("Conflicting neighbourhood names in lookup")
+
+    # .set_index(): makes neughbourhood IDs the lookup keys
+    name_lookup = known_names.set_index("neighbourhood_id")["neighbourhood"]
+
+    # Fill in missing names using their IDs
+    clean_df["neighbourhood"] = clean_df["neighbourhood"].fillna(
+        clean_df["neighbourhood_id"].map(name_lookup)  # map(): finds corresponding name for each ID
+    )
+
     return clean_df
 
 

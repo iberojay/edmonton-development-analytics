@@ -34,6 +34,38 @@ def profile_raw_data(df):
     )
 
 
+def explore_approvals(clean_df):
+    '''Explore approval trends using the transformed data'''
+    print("\nApproval Exploreation")
+    print("\nEarliest permit date:", clean_df["permit_date"].min())  
+    print("Latest permit date:", clean_df["permit_date"].max()) 
+
+    # Exploring Annual Approval Counts
+    approved = clean_df.loc[
+        clean_df["status"].eq("Approved") & clean_df["permit_date"].notna()
+    ]
+
+    print("\nAnnaual dated approval counts:")
+    print(
+        approved["permit_date"]
+        .dt.year  # only get the year part of the datetime object
+        .value_counts()  # Count how many permits were approved in EACH YEAR
+        .sort_index()  # Sorts resuls by their labels (years) in ascending order
+    )
+
+    annual_counts_by_type = pd.crosstab(
+        approved["permit_date"].dt.year,
+        approved["permit_type"],
+    )
+
+    print("\nApproved permit types in 2018 and 2019:")
+    print(
+        annual_counts_by_type
+        .reindex([2018, 2019], fill_value=0)
+        .T.to_string()
+    )
+
+
 def validate_rows(clean_df):
     '''Check missing and duplacte permit identifiers.'''
     print("\nROW ID VALIDATION")
@@ -154,52 +186,52 @@ def validate_missing_neighbourhoods(clean_df):
 
 def validate_transformation(df, clean_df):
     '''Report row preservation, data types, and conversion failures'''
-    print("\nTransfomration Validation")
-    print("Raw rows:", len(df))
-    print("Cleaned rows:", len(clean_df))
-    print("Row counts match:", len(df) == len(clean_df))
+    # print("\nTransfomration Validation")
+    # print("Raw rows:", len(df))
+    # print("Cleaned rows:", len(clean_df))
+    # print("Row counts match:", len(df) == len(clean_df))
 
-    print("\nCleaned column types:")
-    print(clean_df.dtypes)  # shows data type of every column in df
+    # print("\nCleaned column types:")
+    # print(clean_df.dtypes)  # shows data type of every column in df
 
-    validate_rows(clean_df)
-    validate_conversions(df, clean_df)
-    validate_classifications(df, clean_df)
-    validate_neighbourhood_mappings(clean_df)
+    # validate_rows(clean_df)
+    # validate_conversions(df, clean_df)
+    # validate_classifications(df, clean_df)
+    # validate_neighbourhood_mappings(clean_df)
     validate_missing_neighbourhoods(clean_df)
+    validate_neighbourhood_name_recovery(clean_df)
 
 
 
-def explore_approvals(clean_df):
-    '''Explore approval trends using the transformed data'''
-    print("\nApproval Exploreation")
-    print("\nEarliest permit date:", clean_df["permit_date"].min())  
-    print("Latest permit date:", clean_df["permit_date"].max()) 
+def validate_neighbourhood_name_recovery(clean_df):
+    '''Check availble names for IDs whose names are missing.'''
+    # Build loockup candidates from single IDs with single names
+    #  - existing ID and name pair 
+    known_names = clean_df.loc[
+        clean_df["neighbourhood_id"].notna()
+        & clean_df["neighbourhood"].notna()
+        & ~clean_df["neighbourhood_id"].str.contains(",", na=False)
+        & ~clean_df["neighbourhood"].str.contains(",", na=False),
+        ["neighbourhood_id", "neighbourhood"],
+    ].drop_duplicates()
 
-    # Exploring Annual Approval Counts
-    approved = clean_df.loc[
-        clean_df["status"].eq("Approved") & clean_df["permit_date"].notna()
-    ]
+    # Find IDs needing a name (neighbourhood_ID with MISSING name)
+    missing_neighbourhood_name_ids = clean_df.loc[
+        clean_df["neighbourhood_id"].notna() & clean_df["neighbourhood"].isna(),  #id with no name
+        ["neighbourhood_id"]
+    ].drop_duplicates()
 
-    print("\nAnnaual dated approval counts:")
-    print(
-        approved["permit_date"]
-        .dt.year  # only get the year part of the datetime object
-        .value_counts()  # Count how many permits were approved in EACH YEAR
-        .sort_index()  # Sorts resuls by their labels (years) in ascending order
+    # .merge()
+    #  - matches missing name Ids to known names using neighbourhood_id
+    recovery_check = missing_neighbourhood_name_ids.merge(
+        known_names,
+        on="neighbourhood_id",
+        how="left",
+        validate="one_to_one"
     )
+    print("\nPossible names for missing neighbourhood values:")
+    print(recovery_check.to_string(index=False))
 
-    annual_counts_by_type = pd.crosstab(
-        approved["permit_date"].dt.year,
-        approved["permit_type"],
-    )
-
-    print("\nApproved permit types in 2018 and 2019:")
-    print(
-        annual_counts_by_type
-        .reindex([2018, 2019], fill_value=0)
-        .T.to_string()
-    )
 
 
 def main():
