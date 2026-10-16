@@ -34,16 +34,15 @@ def profile_raw_data(df):
     )
 
 
-def validate_transformation(df, clean_df):
-    '''Report row preservation, data types, and conversion failures'''
-    print("\nTransfomration Validation")
-    print("Raw rows:", len(df))
-    print("Cleaned rows:", len(clean_df))
-    print("Row counts match:", len(df) == len(clean_df))
+def validate_rows(clean_df):
+    '''Check missing and duplacte permit identifiers.'''
+    print("\nROW ID VALIDATION")
+    print("Missing Row IDs:", clean_df["row_id"].isna().sum())
+    print("Duplicate Row IDs:", clean_df["row_id"].duplicated().sum())
 
-    print("\nCleaned column types:")
-    print(clean_df.dtypes)  # shows data type of every column in df
 
+def validate_conversions(df, clean_df):
+    '''Find nonempty values that becmae missing during conversion.'''
     # Validate date and numeric conversions
     conversion_columns = {
         "Permit Date": "permit_date",
@@ -52,7 +51,7 @@ def validate_transformation(df, clean_df):
         "Land Parcel Count": "land_parcel_count",
     }
 
-    print("Conversion failures:")
+    print("\nCONVERSION VALIDATION")
     # Loop through key value 
     for raw_column, clean_column in conversion_columns.items():
         # Select orginal column and remove whitespace and blank strings 
@@ -69,11 +68,106 @@ def validate_transformation(df, clean_df):
         if failed_conversion.any():
             print(original_values[failed_conversion].head())
 
+
+def validate_classifications(df, clean_df):
+    '''Display classifcaiton counts before and after cleaning'''
     print("\nRaw neighbourhood classification:")
     print(df["Neighbourhood Classification"].value_counts(dropna=False))
 
     print("\nCleaned neighbourhood classification:")
     print(clean_df["neighbourhood_classification"].value_counts(dropna=False))
+
+
+def validate_neighbourhood_mappings(clean_df):
+    '''Inspect inconsistent names for ID strings and individual IDs.'''
+    # Neighbourhood Id and Names Check
+    names_per_id = (
+        clean_df.groupby("neighbourhood_id")["neighbourhood"]  # groups records sharing neighbourhood ID
+        .nunique()  # Counts distinct nonmissing neighbourhood names
+    )
+    conflicting_ids = names_per_id[names_per_id > 1]  # Identify IDs associated with multiple names
+
+    print("\nNeighbourhood IDs with multiple names:")
+    print(conflicting_ids)
+
+    print("\nAssociated ID-and-name combinations:")
+    print(
+        clean_df.loc[
+            clean_df["neighbourhood_id"].isin(conflicting_ids.index),
+            ["neighbourhood_id", "neighbourhood"],
+        ]
+        .drop_duplicates()
+        .to_string(index=False)
+    )
+
+    single_id_records = clean_df.loc[
+        clean_df["neighbourhood_id"].notna() &
+        ~clean_df["neighbourhood_id"].str.contains(",", na=False)  # exclude ID cells containing commas
+    ]
+
+    names_per_single_id = (
+        single_id_records
+        .groupby("neighbourhood_id")["neighbourhood"]
+        .nunique()
+    )
+    conflicting_single_ids = names_per_single_id[
+        names_per_single_id > 1
+    ]
+    print("\nSingle neighbourhood IDs with multiple names:")
+    print(conflicting_single_ids)
+
+    print("\nAssociated single-ID name combinations:")
+    print(
+        single_id_records.loc[
+            single_id_records["neighbourhood_id"].isin(
+                conflicting_single_ids.index
+            ),
+            ["neighbourhood_id", "neighbourhood"],
+        ]
+        .drop_duplicates()
+        .sort_values(["neighbourhood_id", "neighbourhood"])
+        .to_string(index=False)
+    )
+
+
+def validate_missing_neighbourhoods(clean_df):
+    '''Count and display missing neighbourhood information.'''
+    print("\nMISSING NEIGHBOURHOOD VALUES")
+    print(
+        clean_df[["neighbourhood_id", "neighbourhood"]]
+        .isna().sum()
+    )
+
+    missing_neighbourhood = (
+        clean_df["neighbourhood_id"].isna()
+        | clean_df["neighbourhood"].isna()
+    )
+
+    print("\nRecords with missing neighbourhood information:")
+    print(
+        clean_df.loc[
+            missing_neighbourhood,
+            ["row_id", "neighbourhood_id", "neighbourhood"],
+        ].to_string(index=False)
+    )
+
+
+def validate_transformation(df, clean_df):
+    '''Report row preservation, data types, and conversion failures'''
+    print("\nTransfomration Validation")
+    print("Raw rows:", len(df))
+    print("Cleaned rows:", len(clean_df))
+    print("Row counts match:", len(df) == len(clean_df))
+
+    print("\nCleaned column types:")
+    print(clean_df.dtypes)  # shows data type of every column in df
+
+    validate_rows(clean_df)
+    validate_conversions(df, clean_df)
+    validate_classifications(df, clean_df)
+    validate_neighbourhood_mappings(clean_df)
+    validate_missing_neighbourhoods(clean_df)
+
 
 
 def explore_approvals(clean_df):
@@ -115,9 +209,9 @@ def main():
     df = extract_permits(csv_path)
     clean_df = transform_permits(df)  
 
-    profile_raw_data(df)
+    #profile_raw_data(df)
     validate_transformation(df, clean_df)
-    explore_approvals(clean_df)
+    #explore_approvals(clean_df)
 
 if __name__ == "__main__":
     main()
