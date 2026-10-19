@@ -184,25 +184,6 @@ def validate_missing_neighbourhoods(clean_df):
     )
 
 
-def validate_transformation(df, clean_df):
-    '''Report row preservation, data types, and conversion failures'''
-    # print("\nTransfomration Validation")
-    # print("Raw rows:", len(df))
-    # print("Cleaned rows:", len(clean_df))
-    # print("Row counts match:", len(df) == len(clean_df))
-
-    # print("\nCleaned column types:")
-    # print(clean_df.dtypes)  # shows data type of every column in df
-
-    # validate_rows(clean_df)
-    # validate_conversions(df, clean_df)
-    # validate_classifications(df, clean_df)
-    # validate_neighbourhood_mappings(clean_df)
-    validate_missing_neighbourhoods(clean_df)
-    validate_neighbourhood_name_recovery(clean_df)
-
-
-
 def validate_neighbourhood_name_recovery(clean_df):
     '''Check availble names for IDs whose names are missing.'''
     # Build loockup candidates from single IDs with single names
@@ -233,16 +214,118 @@ def validate_neighbourhood_name_recovery(clean_df):
     print(recovery_check.to_string(index=False))
 
 
+# For every individual ID inside a multiple-ID cell, find its name elsewhere in the dataset
+def validate_multi_id_coverage(clean_df, neighbourhood_overrides):
+    '''Check lookup coverage for IDs appearing in multi-ID cells.'''
+    # Lookup where: ID and name both exists AND neither contains commas, so each cell contains a single entry 
+    known_name = clean_df.loc[
+        clean_df["neighbourhood_id"].notna()
+        & clean_df["neighbourhood"].notna()
+        & ~clean_df["neighbourhood_id"].str.contains(",", na=False)
+        & ~clean_df["neighbourhood"].str.contains(",", na=False),
+        ["neighbourhood_id", "neighbourhood"],
+    ].drop_duplicates()
+
+    # Combines mappings from permit records with the three confirmed mappings from reference CSV
+    known_name = pd.concat(
+        [known_name, neighbourhood_overrides],
+        ignore_index=True,
+    ).drop_duplicates()
+
+    # Select cells with multiple IDs
+    multi_id_values = clean_df.loc[
+        clean_df["neighbourhood_id"].str.contains(",", na=False),
+        "neighbourhood_id",
+    ]
+
+
+    # Turn those cells into a table of individual IDs
+    individual_ids = (
+        multi_id_values
+        .str.split(",")  # string becomes list
+        .explode()  # Each item in list becomes a separate row
+        .str.strip()
+        .drop_duplicates()  # keeps each indivudal ID once
+        .rename("neighbourhood_id")
+        .to_frame() # Converts the Series into a one-column DataFrame 
+    )
+
+    # Look up a name for each ID 
+    coverage = individual_ids.merge(
+        known_name,
+        on="neighbourhood_id",
+        how="left",
+        validate="one_to_one"
+    )
+
+    print("Table merge:",coverage.to_string(index=False))
+
+    # Select IDs lookup couldn't name, from the merged table, select IDs whose name is missing 
+    #   - 6212, 3381, 5456, 4451
+    unmatched_ids = coverage.loc[
+        coverage["neighbourhood"].isna(),
+        "neighbourhood_id",
+    ]
+
+    # loop through each missing one
+    for neighbourhood_id in unmatched_ids:
+        contains_id = clean_df["neighbourhood_id"].apply(
+            lambda value: (
+                neighbourhood_id in [
+                    item.strip() for item in value.split(",")
+                ]
+                if pd.notna(value)
+                else False
+            )   
+        )
+
+        print(f"\nSource combinations containing ID {neighbourhood_id}:")
+        print(
+            clean_df.loc[
+                contains_id,
+                ["neighbourhood_id", "neighbourhood"],
+            ]
+            .drop_duplicates()
+            .to_string(index=False)
+        )
+
+
+def validate_transformation(df, clean_df, neighbourhood_overrides):
+    '''Report row preservation, data types, and conversion failures'''
+    # print("\nTransfomration Validation")
+    # print("Raw rows:", len(df))
+    # print("Cleaned rows:", len(clean_df))
+    # print("Row counts match:", len(df) == len(clean_df))
+
+    # print("\nCleaned column types:")
+    # print(clean_df.dtypes)  # shows data type of every column in df
+
+    # validate_rows(clean_df)
+    # validate_conversions(df, clean_df)
+    # validate_classifications(df, clean_df)
+    # validate_neighbourhood_mappings(clean_df)
+
+    # validate_missing_neighbourhoods(clean_df)
+    # validate_neighbourhood_name_recovery(clean_df)
+
+    validate_multi_id_coverage(clean_df, neighbourhood_overrides)
+
+
+
+
 
 def main():
     project_root = Path(__file__).resolve().parent.parent
     csv_path = project_root / "data" / "raw" / "Development_Permits_20261010.csv" 
 
+    reference_path = (project_root / "data" / "reference" / "neighbourhood_overrides.csv")
+    neighbourhood_overrides = pd.read_csv(reference_path, dtype="string")
+
     df = extract_permits(csv_path)
     clean_df = transform_permits(df)  
 
     #profile_raw_data(df)
-    validate_transformation(df, clean_df)
+    validate_transformation(df, clean_df, neighbourhood_overrides)
     #explore_approvals(clean_df)
 
 if __name__ == "__main__":
