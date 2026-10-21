@@ -63,7 +63,7 @@ def transform_permits(df):
     return clean_df
 
 
-def  clean_classifcation(value):
+def clean_classifcation(value):
     '''Remove repeated classifications inside Neighbourhood Classifcation'''
     # If no value exists return <NA> inside the record 
     if pd.isna(value):
@@ -80,3 +80,25 @@ def  clean_classifcation(value):
     unique_classifcations = dict.fromkeys(cleaned_classifcation)
     
     return ", ".join(unique_classifcations)
+
+def build_permit_neighbourhoods(clean_df):
+    '''Create one row per permit-neighbourhood relationship. (No multiple neighbourhood_id in one cell)'''
+    relationships = clean_df[
+        ["row_id", "neighbourhood_id"]
+    ].dropna(subset=["neighbourhood_id"]).copy()
+
+    # Convert each neighbourhood_id string into a list
+    relationships["neighbourhood_id"] = (
+        relationships["neighbourhood_id"].str.split(",")
+    )
+
+    # Each record becomes a separate row, Pandas repeats the corresponding row_id automatically
+    relationships = relationships.explode("neighbourhood_id")
+
+    # Remove surronding whitespace
+    relationships["neighbourhood_id"] = (
+        relationships["neighbourhood_id"].str.strip()
+    )
+
+    # Removes repeat permit-neihgbourhood pairs,, gives result a fresh numbered index and returns it 
+    return relationships.drop_duplicates().reset_index(drop=True)

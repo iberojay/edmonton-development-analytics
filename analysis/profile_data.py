@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd
 
 from etl.extract import extract_permits
-from etl.transform import transform_permits
+from etl.transform import transform_permits, build_permit_neighbourhoods
 
 def profile_raw_data(df):
     '''Summarize the source data before transformation'''
@@ -290,6 +290,81 @@ def validate_multi_id_coverage(clean_df, neighbourhood_overrides):
         )
 
 
+def split_neighbourhood_ids(value):
+    '''Takes one cell and returns its individual IDs  as  a set'''
+    # Check whether the cell is missing
+    if pd.isna(value):
+        return set()
+
+    # Create a empty collection
+    neighbourhood_ids = set()
+
+    #Split by commas and loop through the pieces
+    for item in value.split(","):
+        neighbourhood_ids.add(item.strip())
+
+    return neighbourhood_ids
+
+
+def validate_permit_neighbourhoods(clean_df, permit_neighbourhoods):
+    '''Check that relationshups match the original permit records.'''
+    # Does each permit have the same neighbourhood IDs before and after we split them into relationship rows?
+
+    print("\nPERMIT-NEIGHBOURHOOD VALIDATION")
+
+    # Expected neighbourhood IDs from each original permit record 
+    # row_id index, selects neighbourhood ID column and run helper function on each cell
+    expected = (
+        clean_df
+        .set_index("row_id")["neighbourhood_id"]
+        .apply(split_neighbourhood_ids)
+    )
+
+    # Collect actual IDs from the relationshup table 
+    actual = (
+        permit_neighbourhoods
+        .groupby("row_id")["neighbourhood_id"] # Gather rows belonging to the same permit
+        .agg(set)  # Collects their neighbourhood IDs into a set
+    )
+
+    # Compare expected and actual sets
+    mismatched_permits = []
+
+    for row_id, expected_ids in expected.items():
+        actual_ids = actual.get(row_id, set())
+
+        if expected_ids != actual_ids:
+            mismatched_permits.append(row_id)
+
+    unknown_permits = ~permit_neighbourhoods["row_id"].isin(
+        clean_df["row_id"]
+    )
+
+    print(
+        "Duplicate permit–neighbourhood pairs:",
+        permit_neighbourhoods.duplicated(
+            subset=["row_id", "neighbourhood_id"]
+        ).sum(),
+    )
+
+    print(
+        "Missing values in relationship columns:",
+        permit_neighbourhoods[["row_id", "neighbourhood_id"]]
+        .isna().sum().sum(),
+    )
+
+    print("Links to unknown permits:", unknown_permits.sum())
+
+    print(
+        "Permits with mismatched neighbourhood links:",
+        len(mismatched_permits),
+    )
+    
+    if mismatched_permits:
+        print("Example mismatched permit IDs:", mismatched_permits[:5])
+
+
+
 def validate_transformation(df, clean_df, neighbourhood_overrides):
     '''Report row preservation, data types, and conversion failures'''
     # print("\nTransfomration Validation")
@@ -325,8 +400,12 @@ def main():
     clean_df = transform_permits(df)  
 
     #profile_raw_data(df)
-    validate_transformation(df, clean_df, neighbourhood_overrides)
+    # validate_transformation(df, clean_df, neighbourhood_overrides)
     #explore_approvals(clean_df)
+
+    permit_neighbourhoods = build_permit_neighbourhoods(clean_df)
+    validate_permit_neighbourhoods(clean_df, permit_neighbourhoods)
+
 
 if __name__ == "__main__":
     main()

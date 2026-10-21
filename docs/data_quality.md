@@ -41,6 +41,22 @@ records have a name in the combined lookup. Three supplemental
 mappings were confirmed using the neighbourhood reference dataset;
 6212 → ELLERSLIE AREA was inferred from permit record 065305222-040.
 
+## Permit-Neighborhood Relationships
+Created a separate relationship table with one row per unique
+permit–neighbourhood pair.
+
+Checked permit 065305222-040: its original IDs, 6212 and 6214,
+appear as two links with the same row_id.
+
+Full relationship validation passed:
+- No duplicate permit–neighbourhood pairs.
+- No missing values in either relationship column.
+- Every linked permit exists in the cleaned dataset.
+- Every permit’s neighbourhood links match its original IDs.
+
+The six permits without neighbourhood IDs remain in the cleaned
+dataset and have no neighbourhood relationship rows.
+
 ### Reference Source
 
 - Dataset: City of Edmonton — Neighbourhoods
@@ -53,3 +69,5 @@ mappings were confirmed using the neighbourhood reference dataset;
 - Add the three confirmed mappings to the neighbourhood lookup.
 - Investigate ID 6212 before assigning a name.
 - Handle permits associated with multiple neighbourhoods when designing database relationships.
+- Supplemental mappings integrated into coverage validation; all IDs appearing in multi-ID cells now have lookup names.
+- Integration into the database neighbourhood lookup is pending.
