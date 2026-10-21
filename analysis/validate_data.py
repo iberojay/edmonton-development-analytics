@@ -302,6 +302,34 @@ def validate_permit_neighbourhoods(clean_df, permit_neighbourhoods):
         print("Example mismatched permit IDs:", mismatched_permits[:5])
 
 
+def validate_neighbourhoods(neighbourhoods, permit_neighbourhoods):
+    '''Check neighbourhood IDs, names, and relationship coverage'''
+    print("\nNeighbourhood Table Validation")
+
+    # Check that neighbourhood ID are unique and both columns have avlues
+    # Check for repeated neighbourhood 
+    print("Duplicate neighbourhood IDs:", neighbourhoods["neighbourhood_id"].duplicated().sum())
+
+
+    print("Missing IDs or names:", neighbourhoods[["neighbourhood_id", "neighbourhood"]].isna().sum().sum())
+
+    # Check whether every relationship ID exists in the neighbourhood table
+    unmatched = ~permit_neighbourhoods["neighbourhood_id"].isin(
+        neighbourhoods["neighbourhood_id"]
+    )
+
+    print("Links to unknown neighbourhoods:", unmatched.sum())
+
+    if unmatched.any():
+        print(
+            permit_neighbourhoods.loc[
+                unmatched,
+                ["row_id", "neighbourhood_id"],
+            ].to_string(index=False)
+        )
+
+
+
 def validate_transformation(df, clean_df, neighbourhood_overrides):
     '''Report row preservation, data types, and conversion failures'''
     # print("\nTransfomration Validation")

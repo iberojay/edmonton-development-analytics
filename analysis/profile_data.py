@@ -2,8 +2,8 @@ from pathlib import Path
 import pandas as pd
 
 from etl.extract import extract_permits
-from etl.transform import transform_permits, build_permit_neighbourhoods
-from analysis.validate_data import validate_transformation, validate_permit_neighbourhoods
+from etl.transform import transform_permits, build_permit_neighbourhoods, build_neighbourhoods
+from analysis.validate_data import validate_transformation, validate_permit_neighbourhoods, validate_neighbourhoods
 
 def profile_raw_data(df):
     '''Summarize the source data before transformation'''
@@ -68,21 +68,35 @@ def explore_approvals(clean_df):
 
 
 def main():
+    # Locate the input files 
     project_root = Path(__file__).resolve().parent.parent
+
     csv_path = project_root / "data" / "raw" / "Development_Permits_20261010.csv" 
 
     reference_path = (project_root / "data" / "reference" / "neighbourhood_overrides.csv")
+
+    # Read input files
+    df = extract_permits(csv_path)
     neighbourhood_overrides = pd.read_csv(reference_path, dtype="string")
 
-    df = extract_permits(csv_path)
+    # Clean permits and build the related tables
     clean_df = transform_permits(df)  
-
-    #profile_raw_data(df)
-    validate_transformation(df, clean_df, neighbourhood_overrides)
-    #explore_approvals(clean_df)
-
     permit_neighbourhoods = build_permit_neighbourhoods(clean_df)
-    validate_permit_neighbourhoods(clean_df, permit_neighbourhoods)
+    neighbourhoods = build_neighbourhoods(clean_df, neighbourhood_overrides)
+
+    # Optional profiling and validaiton output
+    #profile_raw_data(df)
+    #validate_transformation(df, clean_df, neighbourhood_overrides)
+    #explore_approvals(clean_df)
+    #validate_permit_neighbourhoods(clean_df, permit_neighbourhoods)
+
+    # Insepct the neighbood table 
+    print("\nNeighbourhood Table")
+    print(neighbourhoods.head(10).to_string(index=False))
+    print("Total neighbourhoods:", len(neighbourhoods))
+    
+    validate_neighbourhoods(neighbourhoods,permit_neighbourhoods)
+
 
 
 if __name__ == "__main__":

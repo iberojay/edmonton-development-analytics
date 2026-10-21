@@ -102,3 +102,29 @@ def build_permit_neighbourhoods(clean_df):
 
     # Removes repeat permit-neihgbourhood pairs,, gives result a fresh numbered index and returns it 
     return relationships.drop_duplicates().reset_index(drop=True)
+
+
+def build_neighbourhoods(clean_df, neighbourhood_overrides):
+    '''Create a seperate table with one neighbourhood ID and one name per row (UNIQUE)'''
+    neighbourhoods = clean_df.loc[
+        clean_df["neighbourhood_id"].notna()
+        & clean_df["neighbourhood"].notna()
+        & ~clean_df["neighbourhood_id"].str.contains(",", na=False)
+        & ~clean_df["neighbourhood"].str.contains(",", na=False),
+        ["neighbourhood_id", "neighbourhood"],
+    ].drop_duplicates()
+
+    neighbourhoods = pd.concat(
+        [neighbourhoods, neighbourhood_overrides],
+        ignore_index=True,
+    ).drop_duplicates()
+
+    if neighbourhoods["neighbourhood_id"].duplicated().any():
+        raise ValueError("Conflicting neighbourhood names in lookup")
+
+    # returns a new DF and doesn't change clean_df
+    return (
+        neighbourhoods
+        .sort_values("neighbourhood_id")
+        .reset_index(drop=True)
+    )
