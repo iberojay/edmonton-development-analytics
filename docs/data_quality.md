@@ -39,11 +39,11 @@ records have a name in the combined lookup. Three supplemental
 mappings were confirmed using the neighbourhood reference dataset;
 6212 → ELLERSLIE AREA was inferred from permit record 065305222-040.
 
-## Permit-Neighborhood Relationships
+## Permit-Neighbourhood Relationships
 Created a separate relationship table with one row per unique
 permit–neighbourhood pair.
 
-Checked permit 065305222-040: its original IDs, 6212 and 6214,
+Checked permit 065305222-040: its original IDs, 6212 ansd 6214,
 appear as two links with the same row_id.
 
 Full relationship validation passed:
@@ -54,6 +54,9 @@ Full relationship validation passed:
 
 The six permits without neighbourhood IDs remain in the cleaned
 dataset and have no neighbourhood relationship rows.
+
+The relationship table contains 120,766 unique links.
+238 permit records contain multiple neighbourhood IDs.
 
 ## Neighbourhood Lookup Table
 
@@ -74,7 +77,5 @@ Validation passed:
 - Date checked: [2026-10-17]
 
 ### Remaining Work
-
-- Create PostgreSQL tables with primary and foreign keys.
 - Load the validated permit, neighbourhood, and relationship tables.
 - Validate the loaded database records and relationships.

@@ -332,20 +332,20 @@ def validate_neighbourhoods(neighbourhoods, permit_neighbourhoods):
 
 def validate_transformation(df, clean_df, neighbourhood_overrides):
     '''Report row preservation, data types, and conversion failures'''
-    # print("\nTransfomration Validation")
-    # print("Raw rows:", len(df))
-    # print("Cleaned rows:", len(clean_df))
-    # print("Row counts match:", len(df) == len(clean_df))
+    print("\nTransfomration Validation")
+    print("Raw rows:", len(df))
+    print("Cleaned rows:", len(clean_df))
+    print("Row counts match:", len(df) == len(clean_df))
 
-    # print("\nCleaned column types:")
-    # print(clean_df.dtypes)  # shows data type of every column in df
+    print("\nCleaned column types:")
+    print(clean_df.dtypes)  # shows data type of every column in df
 
-    # validate_rows(clean_df)
-    # validate_conversions(df, clean_df)
-    # validate_classifications(df, clean_df)
-    # validate_neighbourhood_mappings(clean_df)
+    validate_rows(clean_df)
+    validate_conversions(df, clean_df)
+    validate_classifications(df, clean_df)
+    validate_neighbourhood_mappings(clean_df)
 
-    # validate_missing_neighbourhoods(clean_df)
-    # validate_neighbourhood_name_recovery(clean_df)
+    validate_missing_neighbourhoods(clean_df)
+    validate_neighbourhood_name_recovery(clean_df)
 
     validate_multi_id_coverage(clean_df, neighbourhood_overrides)
