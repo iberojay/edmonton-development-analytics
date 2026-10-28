@@ -1,21 +1,20 @@
 # Data Quality Checks
 
 ## Transformation Validation
-
 - Raw and cleaned datasets both contain 120,492 records.
 - No nonempty values became missing during date or numeric conversion.
 - Repeated neighbourhood classification labels were removed while preserving mixed classifications.
 
-## Missing Neighbourhood Names
 
+## Missing Neighbourhood Names
 Initially, 29 records were missing neighbourhood names and six were missing neighbourhood IDs.
 
 Using existing records with a single ID and a single name, we recovered 23 missing names. The lookup was checked for conflicting names before filling values.
 
 Six records still have both the neighbourhood ID and name missing. These records were retained with missing values.
 
-## Neighbourhood Lookup Coverage
 
+## Neighbourhood Lookup Coverage
 Some permit records contain multiple neighbourhood IDs in one cell.
 
 We split these cells into individual IDs and checked whether each ID had a name available from records containing a single ID and a single name.
@@ -39,6 +38,7 @@ records have a name in the combined lookup. Three supplemental
 mappings were confirmed using the neighbourhood reference dataset;
 6212 → ELLERSLIE AREA was inferred from permit record 065305222-040.
 
+
 ## Permit-Neighbourhood Relationships
 Created a separate relationship table with one row per unique
 permit–neighbourhood pair.
@@ -59,7 +59,6 @@ The relationship table contains 120,766 unique links.
 238 permit records contain multiple neighbourhood IDs.
 
 ## Neighbourhood Lookup Table
-
 Built a reusable neighbourhood table containing 402 rows,
 combining single-ID mappings with four supplemental mappings.
 
@@ -68,6 +67,25 @@ Validation passed:
 - No missing IDs or names.
 - Every neighbourhood ID in the permit–neighbourhood relationship
   table exists in the lookup.
+
+
+## Staging Load Validation
+Loaded 120,492 cleaned permit records into PostgreSQL.
+The staging row count matches the cleaned DataFrame.
+
+
+## Dimension Load Validation
+Confirmed PostgreSQL row counts:
+- dim_date: 4,299 calendar dates.
+- dim_permit_type: 6 permit types.
+- dim_neighbourhood: 402 neighbourhoods.
+
+Fact and bridge loading remain pending.
+
+
+## Fact Load Validation
+Populated fact_permits with 120,492 records, matching staging.
+Used a left join to preserve permits with missing dates.
 
 ### Reference Source
 
