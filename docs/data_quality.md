@@ -80,7 +80,17 @@ Confirmed PostgreSQL row counts:
 - dim_permit_type: 6 permit types.
 - dim_neighbourhood: 402 neighbourhoods.
 
-Fact and bridge loading remain pending.
+
+## Fact Load Validation
+Loaded 120,492 permit records into fact_permits.
+The row count matches staging. Permits with missing dates
+were preserved using a left join.
+
+
+## Bridge Load Validation
+Loaded 120,766 permit–neighbourhood links.
+The row count matches the validated relationship DataFrame.
+Each bridge row contains one permit ID and one neighbourhood ID.
 
 
 ## Fact Load Validation

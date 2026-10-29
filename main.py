@@ -4,8 +4,8 @@ from pathlib import Path
 import pandas as pd
 
 from etl.extract import extract_permits
-from etl.transform import transform_permits, build_neighbourhoods
-from etl.load import load_staging_permits, populate_dimensions, populate_fact_permits
+from etl.transform import transform_permits, build_neighbourhoods, build_permit_neighbourhoods
+from etl.load import load_staging_permits, populate_dimensions, populate_fact_permits, load_permit_neighbourhoods
 
 # Find the folder containing main.py: project root 
 project_root = Path(__file__).resolve().parent
@@ -32,6 +32,10 @@ neighbourhoods = build_neighbourhoods(
 # Populate the dimension tables
 populate_dimensions(neighbourhoods)
 populate_fact_permits()
+
+# Build and load the links between permits and neighbourhoods
+permit_neighbourhoods = build_permit_neighbourhoods(clean_df)
+load_permit_neighbourhoods(permit_neighbourhoods)
 
 # Choose where to save the cleaned CSV
 output_path = project_root / "data" / "processed" / "development_permits_clean.csv"

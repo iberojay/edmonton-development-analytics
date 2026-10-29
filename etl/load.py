@@ -188,5 +188,39 @@ def populate_fact_permits():
 
     print(f"Populated fact_permits with {loaded_rows:,} records.")
 
+
+def load_permit_neighbourhoods(permit_neighbourhoods):
+    '''Replace the database bridge with the validated relationships.'''
+    relationships = permit_neighbourhoods[["row_id", "neighbourhood_id"]]
+
+    with psycopg.connect(dbname="edmonton_development") as connection:
+        with connection.cursor() as cursor:
+            # Clear previous links so reruns replace the snapshot
+            cursor.execute("DELETE FROM bridge_permit_neighbourhood;")
+
+            # Bulk-load the two relationship columns 
+            with cursor.copy("""
+                COPY bridge_permit_neighbourhood (
+                    row_id, neighbourhood_id
+                )
+                FROM STDIN WITH (FORMAT CSV, HEADER TRUE)
+            """) as copy:
+                copy.write(relationships.to_csv(index=False))
+
+            # Confirm the database recieved every link
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM bridge_permit_neighbourhood;
+            """)
+            loaded_rows = cursor.fetchone()[0]
+
+            if loaded_rows != len(relationships):
+                raise ValueError(
+                    f"Expected {len(relationships)} links, "
+                    f"loaded {loaded_rows}"
+                )
+        
+    print(f"Loaded {loaded_rows:,} permit–neighbourhood links.")
+
 if __name__ == "__main__":
     check_database_connection()
