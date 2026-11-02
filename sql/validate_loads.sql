@@ -53,6 +53,8 @@ LEFT JOIN bridge_permit_neighbourhood bn
 WHERE bn.row_id IS NULL;
 
 
+-- Find bridge permit-neighbourhood links that are absent from staging.
+-- Match both row_id and neighbourhood_id.
 WITH expected_links AS (
     -- Removes duplicate pairs
     SELECT DISTINCT sp.row_id, TRIM(ids.neighbourhood_id) AS neighbourhood_id

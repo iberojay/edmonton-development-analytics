@@ -97,6 +97,15 @@ Each bridge row contains one permit ID and one neighbourhood ID.
 Populated fact_permits with 120,492 records, matching staging.
 Used a left join to preserve permits with missing dates.
 
+## Reporting Table Validation
+All checks in sql/validate_loads.sql returned zero rows:
+- Staging permits missing from fact.
+- Fact permits absent from staging.
+- Date mapping mismatches.
+- Permit type mapping mismatches.
+- Missing neighbourhood links.
+- Extra neighbourhood links.
+
 ### Reference Source
 
 - Dataset: City of Edmonton — Neighbourhoods
