@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS dim_permit_type (
 
 CREATE TABLE IF NOT EXISTS dim_neighbourhood (
     neighbourhood_id TEXT PRIMARY KEY,
-    neighbourhood TEXT NOT NULL
+    neighbourhood TEXT NOT NULL  -- Name of neighbourhood
 );
 
 

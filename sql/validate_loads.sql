@@ -73,3 +73,25 @@ AND bn.neighbourhood_id = e.neighbourhood_id
 
 WHERE e.row_id IS NULL;
 
+
+-- REPORTING VIEW VALIDATION 
+-- Confirm monthly summary counts match dated fact records
+SELECT 
+    (SELECT SUM(permit_count)
+     FROM vw_monthly_permit_activity) AS view_total,
+    
+    (SELECT COUNT(*)
+     FROM fact_permits
+     WHERE date_key IS NOT NULL) AS dated_fact_total
+;
+
+SELECT 
+    (SELECT SUM(permit_count)
+     FROM vw_neighbourhood_permit_activity) AS view_total,
+    
+    (SELECT COUNT(*)
+     FROM bridge_permit_neighbourhood bp
+     INNER JOIN fact_permits fp ON bp.row_id = fp.row_id
+     WHERE fp.date_key IS NOT NULL) AS dated_link_total
+;
+

@@ -106,13 +106,22 @@ All checks in sql/validate_loads.sql returned zero rows:
 - Missing neighbourhood links.
 - Extra neighbourhood links.
 
-### Reference Source
+## Reporting View Validation
+Created vw_monthly_permit_activity to summarize dated permits
+by year, month, status, and permit type.
 
+- Total permits counted by the view: 107,291.
+- Fact records with valid dates: 107,291.
+- Totals match.
+- The 13,201 permits without dates remain in fact_permits
+  and are excluded from the monthly summary.
+
+## Reference Source
 - Dataset: City of Edmonton — Neighbourhoods
 - File: City_of_Edmonton_-_Neighbourhoods_20261017.csv
 - URL: https://data.edmonton.ca/City-Administration/City-of-Edmonton-Neighbourhoods/65fr-66s6
 - Date checked: [2026-10-17]
 
-### Remaining Work
+## Remaining Work
 - Load the validated permit, neighbourhood, and relationship tables.
 - Validate the loaded database records and relationships.
